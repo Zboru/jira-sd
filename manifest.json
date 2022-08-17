@@ -1,0 +1,23 @@
+{
+    "name": "JIRA SD Helper",
+    "description": "Siema",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+      "scripting",
+      "storage",
+      "tabs"
+    ],
+    "action": {
+      "default_popup": "index.html"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*.enetproduction.atlassian.net/issues/*"],
+        "js": [
+          "dist/assets/js/index.js"
+        ],
+        "run_at": "document_end"
+      }
+    ]
+  }
