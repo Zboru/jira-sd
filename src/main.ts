@@ -1,14 +1,12 @@
 // const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
-import { Issue } from './types';
+import { Issue, Nullable, SiteType } from './types';
 
 class JIRAServiceDeskHelper {
   private API_TOKEN: string = '2rtWbyPo7CP7v1Fmrelr9C55';
 
   private EMAIL: string = 'sebastian.zborowski@enp.pl';
-
-  private AREA: string = 'MAR';
 
   private currentIssues: any[] = [];
 
@@ -19,7 +17,11 @@ class JIRAServiceDeskHelper {
    * @param issueKey string
    * @returns Promise<Record<string, string>>
    */
-  private async getIssueData(issueKey: string): Promise<Record<string, string>> {
+  private async getIssueData(issueKey: Nullable<string>): Promise<Record<string, string> | null> {
+    if (!issueKey) {
+      return null;
+    }
+
     const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/issue/${issueKey}`, {
       method: 'GET',
       headers: {
@@ -33,31 +35,39 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * Get keys of issues from table, ex. (TASUP-12345|null)
-   * @returns (string|null)[]
+   * Get current type of site for different DOM operations
+   * @returns SiteType | null
    */
-  private getTableIssueKeys(): (string|null)[] {
-    if (!document.querySelector('#issuetable tr.issuerow')) {
-      return [];
+  private getSiteType(): Nullable<SiteType> {
+    const url = window.location.href;
+    if (/filter/.test(url)) {
+      return SiteType.FILTER;
     }
-
-    const issues = Array.from(document.querySelectorAll('#issuetable tr.issuerow')) as HTMLElement[];
-    return issues.map((issue) => issue.dataset.issuekey ?? null);
+    if (/queues/.test(url)) {
+      return SiteType.QUEUE;
+    }
+    return null;
   }
 
   /**
-   * Get data of issues from current
+   * Get keys of issues from table, ex. (TASUP-12345|null)
    */
-  private async getCurrentDetails(): Promise<void> {
-    const keys = this.getTableIssueKeys();
+  private getIssueKeys(): (string|null)[] {
+    const keyCells = Array.from(document.querySelectorAll('.issuekey a')) as HTMLElement[];
+    if (keyCells.length) {
+      return keyCells.map((cell) => cell.dataset.issueKey ?? null);
+    }
+    return [];
+  }
 
-    const promises: Promise<any>[] = [];
-    keys.forEach((key) => {
-      if (key) {
-        promises.push(this.getIssueData(key));
-      }
-    });
+  /**
+   * Save all issues details to array
+   */
+  private async getIssues(): Promise<void> {
+    const keys = this.getIssueKeys();
+    const promises: Promise<any>[] = keys.map((key) => this.getIssueData(key));
     const result = await Promise.allSettled(promises);
+
     this.currentIssues = result.map((promise) => {
       if (promise.status === 'fulfilled') {
         return promise.value as Issue;
@@ -70,21 +80,18 @@ class JIRAServiceDeskHelper {
    * ds
    */
   private async getInternalIssuesData() {
-    const internalKeys = this.currentIssues.map((issue: Issue) => {
+    const internalKeys: string[] = [];
+    this.currentIssues.forEach((issue: Issue) => {
       if (!issue.fields.issuelinks.length) {
         return null;
       }
+      console.log(issue.fields.issuelinks);
 
-      const areaIssue = issue.fields.issuelinks
-        ?.filter((link) => new RegExp(this.AREA).test(link.outwardIssue.key));
-      return areaIssue[0] ? areaIssue[0].outwardIssue.key : null;
+      // internalKeys.push(...issue.fields.issuelinks.map((link) => link.outwardIssue.key));
     });
-    const promises: Promise<any>[] = [];
-    internalKeys.forEach((key) => {
-      if (key) {
-        promises.push(this.getIssueData(key));
-      }
-    });
+    // console.log(internalKeys);
+
+    const promises: Promise<any>[] = internalKeys.map((key) => this.getIssueData(key));
     const result = await Promise.allSettled(promises);
     this.internalIssues = result
       .filter(((promise) => promise.status === 'fulfilled'))
@@ -133,10 +140,10 @@ class JIRAServiceDeskHelper {
   }
 
   public async init(): Promise<void> {
-    await this.getCurrentDetails();
+    await this.getIssues();
     await this.getInternalIssuesData();
-    this.addHeader('Internal Status', '.headerrow-status');
-    this.createInternalStatusCell();
+    // this.addHeader('Internal Status', '.headerrow-status');
+    // this.createInternalStatusCell();
   }
 }
 

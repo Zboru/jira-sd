@@ -39,3 +39,9 @@ export interface Issue {
     key: string;
     self: string;
 }
+
+export enum SiteType {
+    QUEUE, FILTER
+}
+
+export type Nullable<T> = T | null;
