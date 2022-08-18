@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/chrome": "^0.0.193",
     "vite": "^3.0.6"
   },
   "devDependencies": {
+    "@types/node": "^18.7.6",
     "@typescript-eslint/eslint-plugin": "^5.33.0",
     "@typescript-eslint/parser": "^5.33.0",
     "eslint": "^8.21.0",

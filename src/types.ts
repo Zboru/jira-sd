@@ -13,8 +13,8 @@ export interface IssueOutwardIssue {
 
 export interface IssueLink {
     id: string;
-    outwardIssue: IssueOutwardIssue;
-    inwardIssue: IssueOutwardIssue;
+    outwardIssue?: IssueOutwardIssue;
+    inwardIssue?: IssueOutwardIssue;
     self: string;
     type: IssueLinkType;
 }

@@ -6,10 +6,14 @@
     "permissions": [
       "scripting",
       "storage",
-      "tabs"
+      "tabs",
+      "notifications"
     ],
     "action": {
       "default_popup": "index.html"
+    },
+    "background": {
+      "service_worker": "dist/assets/js/background.js"
     },
     "content_scripts": [
       {
@@ -18,7 +22,7 @@
           "*://*.enetproduction.atlassian.net/jira/servicedesk/*"
         ],
         "js": [
-          "dist/assets/js/index.js"
+          "dist/assets/js/main.js"
         ],
         "run_at": "document_end"
       }

@@ -17,11 +17,7 @@ class JIRAServiceDeskHelper {
    * @param issueKey string
    * @returns Promise<Record<string, string>>
    */
-  private async getIssueData(issueKey: Nullable<string>): Promise<Record<string, string> | null> {
-    if (!issueKey) {
-      return null;
-    }
-
+  private async getIssueData(issueKey: Nullable<string>): Promise<Record<string, string>> {
     const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/issue/${issueKey}`, {
       method: 'GET',
       headers: {
@@ -50,20 +46,23 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * Get keys of issues from table, ex. (TASUP-12345|null)
+   * Get keys of issues from table, ex. (TASUP-12345)
    */
-  private getIssueKeys(): (string|null)[] {
+  private getIssueKeys(): string[] {
     const keyCells = Array.from(document.querySelectorAll('.issuekey a')) as HTMLElement[];
     if (keyCells.length) {
-      return keyCells.map((cell) => cell.dataset.issueKey ?? null);
+      return keyCells
+        .map((cell) => cell.dataset.issueKey ?? null)
+        .filter((key) => key) as string[];
     }
     return [];
   }
 
   /**
-   * Save all issues details to array
+   * Save all issues details to currentIssues array
+   * @returns Promise<void>
    */
-  private async getIssues(): Promise<void> {
+  private async getIssuesData(): Promise<void> {
     const keys = this.getIssueKeys();
     const promises: Promise<any>[] = keys.map((key) => this.getIssueData(key));
     const result = await Promise.allSettled(promises);
@@ -77,19 +76,21 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * ds
+   * Save all linked internal issues details to internalIssues array
+   * @returns Promise<void>
    */
-  private async getInternalIssuesData() {
+  private async getInternalIssuesData(): Promise<void> {
     const internalKeys: string[] = [];
     this.currentIssues.forEach((issue: Issue) => {
       if (!issue.fields.issuelinks.length) {
-        return null;
+        return;
       }
-      console.log(issue.fields.issuelinks);
+      const issueKeys: string[] = issue.fields.issuelinks
+        .map((link) => link.outwardIssue?.key)
+        .filter((key) => typeof key === 'string') as string[];
 
-      // internalKeys.push(...issue.fields.issuelinks.map((link) => link.outwardIssue.key));
+      internalKeys.push(...issueKeys);
     });
-    // console.log(internalKeys);
 
     const promises: Promise<any>[] = internalKeys.map((key) => this.getIssueData(key));
     const result = await Promise.allSettled(promises);
@@ -101,47 +102,49 @@ class JIRAServiceDeskHelper {
       });
   }
 
-  private addHeader(title: string, positionAfter: string): void {
-    const rowHeader = document.querySelector(positionAfter) as HTMLElement;
-    if (rowHeader) {
-      const newHeader = document.createElement('th');
-      newHeader.classList.add('colHeaderLink', 'sortable');
-      newHeader.innerHTML = title;
-      rowHeader.after(newHeader);
-    }
-  }
+  // private addHeader(title: string, positionAfter: string): void {
+  //   const rowHeader = document.querySelector(positionAfter) as HTMLElement;
+  //   if (rowHeader) {
+  //     const newHeader = document.createElement('th');
+  //     newHeader.classList.add('colHeaderLink', 'sortable');
+  //     newHeader.innerHTML = title;
+  //     rowHeader.after(newHeader);
+  //   }
+  // }
 
-  private createInternalStatusCell(): void {
-    this.internalIssues.forEach((issue) => {
-      console.log(issue.fields.issuelinks);
+  // private createInternalStatusCell(): void {
+  //   this.internalIssues.forEach((issue) => {
+  //     console.log(issue.fields.issuelinks);
 
-      const parentKey = issue.fields.issuelinks[0].inwardIssue.key;
-      console.log('key', parentKey);
+  //     const parentKey = issue.fields.issuelinks[0].inwardIssue.key;
+  //     console.log('key', parentKey);
 
-      const parentRow = document.querySelector(`#issuetable tr.issuerow[data-issuekey="${parentKey}"] .status`);
-      const classes = 'jira-issue-status-lozenge aui-lozenge jira-issue-status-lozenge-yellow jira-issue-status-lozenge-indeterminate aui-lozenge-subtle jira-issue-status-lozenge-max-width-medium'
-        .split(' ');
-      const statusElement = document.createElement('span');
-      const cell = document.createElement('td');
-      cell.appendChild(statusElement);
-      statusElement.classList.add(...classes);
-      statusElement.innerHTML = issue.fields.status.name;
-      console.log(statusElement);
-      console.log(parentRow, `#issuetable tr.issuerow[data-issuekey="${parentKey}] .status"`);
+  //     const parentRow = document.querySelector(`#issuetable tr.issuerow[data-issuekey="${parentKey}"] .status`);
+  //     const classes = 'jira-issue-status-lozenge aui-lozenge jira-issue-status-lozenge-yellow jira-issue-status-lozenge-indeterminate aui-lozenge-subtle jira-issue-status-lozenge-max-width-medium'
+  //       .split(' ');
+  //     const statusElement = document.createElement('span');
+  //     const cell = document.createElement('td');
+  //     cell.appendChild(statusElement);
+  //     statusElement.classList.add(...classes);
+  //     statusElement.innerHTML = issue.fields.status.name;
+  //     console.log(statusElement);
+  //     console.log(parentRow, `#issuetable tr.issuerow[data-issuekey="${parentKey}] .status"`);
 
-      parentRow?.after(cell);
-    });
-    // const issues = Array.from(doc
-    // ument.querySelectorAll('#issuetable tr.issuerow')) as HTMLElement[];
-    // issues.forEach(issue => {
-    //   const issueKey = issue.dataset.issuekey;
+  //     parentRow?.after(cell);
+  //   });
+  //   // const issues = Array.from(doc
+  //   // ument.querySelectorAll('#issuetable tr.issuerow')) as HTMLElement[];
+  //   // issues.forEach(issue => {
+  //   //   const issueKey = issue.dataset.issuekey;
 
-    // })
-  }
+  //   // })
+  // }
 
   public async init(): Promise<void> {
-    await this.getIssues();
+    await this.getIssuesData();
     await this.getInternalIssuesData();
+    console.log(this.internalIssues);
+
     // this.addHeader('Internal Status', '.headerrow-status');
     // this.createInternalStatusCell();
   }
