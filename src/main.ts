@@ -102,6 +102,19 @@ class JIRAServiceDeskHelper {
       });
   }
 
+  private createInternalStatusHeader(): void {
+    // Find status header
+    const statusHeader = document.querySelector('.headerrow-status');
+
+    // Create table header
+    const header = document.createElement('th');
+    const span = document.createElement('span');
+
+    span.innerText = 'Internal status';
+    header.appendChild(span);
+    statusHeader?.after(header);
+  }
+
   // private addHeader(title: string, positionAfter: string): void {
   //   const rowHeader = document.querySelector(positionAfter) as HTMLElement;
   //   if (rowHeader) {
@@ -144,7 +157,7 @@ class JIRAServiceDeskHelper {
     await this.getIssuesData();
     await this.getInternalIssuesData();
     console.log(this.internalIssues);
-
+    this.createInternalStatusHeader();
     // this.addHeader('Internal Status', '.headerrow-status');
     // this.createInternalStatusCell();
   }
