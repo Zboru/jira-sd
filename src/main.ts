@@ -1,6 +1,8 @@
 // const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
+import css from 'dom-css';
+import { getElementsByText, waitForElement } from './helpers';
 import { Issue, Nullable, SiteType } from './types';
 
 class JIRAServiceDeskHelper {
@@ -77,6 +79,8 @@ class JIRAServiceDeskHelper {
 
   /**
    * Save all linked internal issues details to internalIssues array
+   * @TODO Jest problem kiedy ktoś źle sklonuje wątek i wątek wewnętrzny
+   * znajduje się w inwardIssue, a nie w outwardIssue - trzeba znaleźć rozwiązanie
    * @returns Promise<void>
    */
   private async getInternalIssuesData(): Promise<void> {
@@ -85,9 +89,13 @@ class JIRAServiceDeskHelper {
       if (!issue.fields.issuelinks.length) {
         return;
       }
+
+      // Exclude project links, take only area clones
+      const projectRegExp = /KLER|TERG4|MSO|AMI/g;
+
       const issueKeys: string[] = issue.fields.issuelinks
         .map((link) => link.outwardIssue?.key)
-        .filter((key) => typeof key === 'string') as string[];
+        .filter((key) => typeof key === 'string' && !projectRegExp.test(key)) as string[];
 
       internalKeys.push(...issueKeys);
     });
@@ -102,64 +110,137 @@ class JIRAServiceDeskHelper {
       });
   }
 
+  /**
+   * Returns 'Status' header basing on site type
+   * @returns Element | null
+   */
+  private getStatusTableHeader(): Nullable<Element> {
+    const siteType = this.getSiteType();
+    if (siteType === SiteType.FILTER) {
+      return document.querySelector('.headerrow-status');
+    }
+    if (siteType === SiteType.QUEUE) {
+      const elements = getElementsByText('Status', 'div');
+      return elements[0];
+    }
+    return null;
+  }
+
+  /**
+   * Returns status element of given issue basing on site type
+   * @param issueKey
+   * @returns Element | null
+   */
+  private getStatusTableCell(issueKey: string): Nullable<Element> {
+    const siteType = this.getSiteType();
+    if (siteType === SiteType.FILTER) {
+      return document.querySelector(`#issuetable tr.issuerow[data-issuekey="${issueKey}"] .status`);
+    }
+    if (siteType === SiteType.QUEUE) {
+      const regexp = new RegExp(`${issueKey}-status`);
+      const cells = Array.from(document.querySelectorAll('.virtual-table-row div[data-test-id]')) as HTMLElement[];
+      const statusCell = cells.filter((cell) => regexp.test(cell.dataset.testId ?? '')).at(0);
+      return statusCell ?? null;
+    }
+    return null;
+  }
+
+  /**
+   * Create header for internal status cell
+   * @returns void
+   */
   private createInternalStatusHeader(): void {
     // Find status header
-    const statusHeader = document.querySelector('.headerrow-status');
+    const statusHeader = this.getStatusTableHeader();
 
     // Create table header
     const header = document.createElement('th');
     const span = document.createElement('span');
 
     span.innerText = 'Internal status';
+
     header.appendChild(span);
     statusHeader?.after(header);
   }
 
-  // private addHeader(title: string, positionAfter: string): void {
-  //   const rowHeader = document.querySelector(positionAfter) as HTMLElement;
-  //   if (rowHeader) {
-  //     const newHeader = document.createElement('th');
-  //     newHeader.classList.add('colHeaderLink', 'sortable');
-  //     newHeader.innerHTML = title;
-  //     rowHeader.after(newHeader);
-  //   }
-  // }
+  /**
+   * Wait for tables to load so script can scrap issue keys
+   * @returns Promise<void>
+   */
+  private async waitForLoad(): Promise<void> {
+    const siteType = this.getSiteType();
+    if (siteType === SiteType.FILTER) {
+      await waitForElement('.issue-table-container');
+    }
+    if (siteType === SiteType.QUEUE) {
+      await waitForElement('.virtual-table-row');
+    }
+  }
 
-  // private createInternalStatusCell(): void {
-  //   this.internalIssues.forEach((issue) => {
-  //     console.log(issue.fields.issuelinks);
+  /**
+   * 123
+   * @TODO Dokończyć budowanie kontenerów dla poszczególnych stron bo dla queue
+   * jest rozwalone + ogarnąć metodę stylowania poszczególnych klocków
+   * @returns HTMLElement | null
+   */
+  private getCellContainer(): Nullable<HTMLElement> {
+    const siteType = this.getSiteType();
+    let container = null;
+    if (siteType === SiteType.QUEUE) {
+      container = document.createElement('div');
+    }
+    if (siteType === SiteType.FILTER) {
+      container = document.createElement('span');
+    }
+    css(container, {
+      'font-family': "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,'Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
+      color: 'var(--ds-text,#5e6c84)',
+      'font-style': 'normal',
+      'font-size': '12px',
+      'font-weight': '600',
+      'line-height': '16px',
+      'text-transform': 'uppercase',
+      'margin-top': '0',
+      padding: '2px 4px 3px',
+      'background-color': '#deebff',
+      'border-color': '#deebff',
+      display: 'inline-block',
+      'padding-bottom': 4,
+      'padding-top': 4,
+    });
+    return container;
+  }
 
-  //     const parentKey = issue.fields.issuelinks[0].inwardIssue.key;
-  //     console.log('key', parentKey);
+  /**
+   * Create internal status cell in each current issue
+   * @returns void
+   */
+  private createInternalStatusCells(): void {
+    this.internalIssues.forEach((issue) => {
+      const bugRegExp = /TASUP|ENPSUP/g;
+      const parentIssueLink = issue.fields.issuelinks
+        .filter((link) => bugRegExp.test(link.inwardIssue?.key ?? ''))
+        .at(0);
 
-  //     const parentRow = document.querySelector(`#issuetable tr.issuerow[data-issuekey="${parentKey}"] .status`);
-  //     const classes = 'jira-issue-status-lozenge aui-lozenge jira-issue-status-lozenge-yellow jira-issue-status-lozenge-indeterminate aui-lozenge-subtle jira-issue-status-lozenge-max-width-medium'
-  //       .split(' ');
-  //     const statusElement = document.createElement('span');
-  //     const cell = document.createElement('td');
-  //     cell.appendChild(statusElement);
-  //     statusElement.classList.add(...classes);
-  //     statusElement.innerHTML = issue.fields.status.name;
-  //     console.log(statusElement);
-  //     console.log(parentRow, `#issuetable tr.issuerow[data-issuekey="${parentKey}] .status"`);
+      if (!parentIssueLink) {
+        return;
+      }
 
-  //     parentRow?.after(cell);
-  //   });
-  //   // const issues = Array.from(doc
-  //   // ument.querySelectorAll('#issuetable tr.issuerow')) as HTMLElement[];
-  //   // issues.forEach(issue => {
-  //   //   const issueKey = issue.dataset.issuekey;
+      const statusCell = this.getStatusTableCell(parentIssueLink.inwardIssue?.key ?? '');
 
-  //   // })
-  // }
+      const cellContainer = this.getCellContainer() as HTMLElement;
+      cellContainer.innerText = issue.fields.status.name;
+      statusCell?.after(cellContainer);
+    });
+  }
 
   public async init(): Promise<void> {
+    await this.waitForLoad();
     await this.getIssuesData();
     await this.getInternalIssuesData();
     console.log(this.internalIssues);
     this.createInternalStatusHeader();
-    // this.addHeader('Internal Status', '.headerrow-status');
-    // this.createInternalStatusCell();
+    this.createInternalStatusCells();
   }
 }
 

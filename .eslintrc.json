@@ -17,6 +17,26 @@
     "rules": {
         "semi": "error",
         "consistent-return": "error",
-        "class-methods-use-this": "off"
-    }
+        "class-methods-use-this": "off",
+        "import/extensions": [
+            "error",
+            "ignorePackages",
+            {
+              "js": "never",
+              "jsx": "never",
+              "ts": "never",
+              "tsx": "never"
+            }
+         ],
+         "no-shadow": "off",
+         "@typescript-eslint/no-shadow": ["error"]
+    },
+    "settings": {
+        "import/resolver": {
+          "node": {
+            "extensions": [".ts", ".tsx"],
+            "moduleDirectory": ["src", "node_modules"]
+          }
+        }
+      }
 }
