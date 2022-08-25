@@ -1,15 +1,10 @@
 // const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
-import css from 'dom-css';
 import { getElementsByText, waitForElement } from './helpers';
 import { Issue, Nullable, SiteType } from './types';
 
 class JIRAServiceDeskHelper {
-  private API_TOKEN: string = '2rtWbyPo7CP7v1Fmrelr9C55';
-
-  private EMAIL: string = 'sebastian.zborowski@enp.pl';
-
   private currentIssues: any[] = [];
 
   private internalIssues: Issue[] = [];
@@ -20,12 +15,31 @@ class JIRAServiceDeskHelper {
    * @returns Promise<Record<string, string>>
    */
   private async getIssueData(issueKey: Nullable<string>): Promise<Record<string, string>> {
+    const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
+    if (!storageData) {
+      return {};
+    }
     const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/issue/${issueKey}`, {
       method: 'GET',
       headers: {
-        Authorization: `Basic ${btoa(
-          `${this.EMAIL}:${this.API_TOKEN}`,
-        )}`,
+        Authorization: `Basic ${storageData.auth}`,
+        Accept: 'application/json',
+      },
+    });
+    return response.json();
+  }
+
+  private async searchJira(query: string) {
+    console.log(query);
+    const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
+    if (!storageData) {
+      return {};
+    }
+    const q = 'project in ("ENP Support", "TERG-ADAFIR SUPPORT") AND status not in (Resolved, Closed, "Waiting for release") AND Obszar is not EMPTY AND "Obszar[Select List (multiple choices)]" = MARKETING';
+    const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/search?jql=${q}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${storageData.auth}`,
         Accept: 'application/json',
       },
     });
@@ -81,6 +95,8 @@ class JIRAServiceDeskHelper {
    * Save all linked internal issues details to internalIssues array
    * @TODO Jest problem kiedy ktoś źle sklonuje wątek i wątek wewnętrzny
    * znajduje się w inwardIssue, a nie w outwardIssue - trzeba znaleźć rozwiązanie
+   * można spróbować pobierać wszystkie linki (inward/outward) a potem jedynie filtrować
+   * czy są one ENP/TA-supem i mamy 100% pokrycie
    * @returns Promise<void>
    */
   private async getInternalIssuesData(): Promise<void> {
@@ -192,22 +208,6 @@ class JIRAServiceDeskHelper {
     if (siteType === SiteType.FILTER) {
       container = document.createElement('span');
     }
-    css(container, {
-      'font-family': "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,'Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
-      color: 'var(--ds-text,#5e6c84)',
-      'font-style': 'normal',
-      'font-size': '12px',
-      'font-weight': '600',
-      'line-height': '16px',
-      'text-transform': 'uppercase',
-      'margin-top': '0',
-      padding: '2px 4px 3px',
-      'background-color': '#deebff',
-      'border-color': '#deebff',
-      display: 'inline-block',
-      'padding-bottom': 4,
-      'padding-top': 4,
-    });
     return container;
   }
 
@@ -229,6 +229,9 @@ class JIRAServiceDeskHelper {
       const statusCell = this.getStatusTableCell(parentIssueLink.inwardIssue?.key ?? '');
 
       const cellContainer = this.getCellContainer() as HTMLElement;
+      if (!cellContainer) {
+        return;
+      }
       cellContainer.innerText = issue.fields.status.name;
       statusCell?.after(cellContainer);
     });
@@ -241,6 +244,10 @@ class JIRAServiceDeskHelper {
     console.log(this.internalIssues);
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
+    const result = await this.searchJira('sad');
+    console.log(result);
+
+    chrome.runtime.sendMessage({ notification: true });
   }
 }
 
