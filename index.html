@@ -5,10 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
+    <style>
+      button {
+        float: right;
+        margin: 5px 0;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
-      sieam
+      <label for="email">Adres e-mail:</label>
+      <input type="email" id="email">
+      <label for="token">Token API:</label>
+      <input type="text" id="token">
+      <button>Zapisz</button>
     </div>
+    <script src="./dist/assets/js/popup.js"></script>
   </body>
 </html>
