@@ -14,6 +14,9 @@
     "plugins": [
         "@typescript-eslint"
     ],
+    "globals": {
+      "chrome": true
+    },
     "rules": {
         "semi": "error",
         "consistent-return": "error",
