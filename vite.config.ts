@@ -8,6 +8,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'src/main.ts'),
         background: path.resolve(__dirname, 'src/background.ts'),
+        popup: path.resolve(__dirname, 'src/popup.ts'),
       },
       output: {
         sourcemap: 'inline',
