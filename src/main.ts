@@ -1,11 +1,11 @@
 // const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
-import { getElementsByText, waitForElement } from './helpers';
+import { getElementsByText, notEmpty, waitForElement } from './helpers';
 import { Issue, Nullable, SiteType } from './types';
 
 class JIRAServiceDeskHelper {
-  private currentIssues: any[] = [];
+  private currentIssues: Issue[] = [];
 
   private internalIssues: Issue[] = [];
 
@@ -88,7 +88,7 @@ class JIRAServiceDeskHelper {
         return promise.value as Issue;
       }
       return null;
-    }).filter((promise) => promise);
+    }).filter(notEmpty);
   }
 
   /**
@@ -206,7 +206,9 @@ class JIRAServiceDeskHelper {
       container = document.createElement('div');
     }
     if (siteType === SiteType.FILTER) {
-      container = document.createElement('span');
+      const span = document.createElement('span');
+      container = document.createElement('td');
+      container.appendChild(span);
     }
     return container;
   }
@@ -216,17 +218,17 @@ class JIRAServiceDeskHelper {
    * @returns void
    */
   private createInternalStatusCells(): void {
-    this.internalIssues.forEach((issue) => {
-      const bugRegExp = /TASUP|ENPSUP/g;
-      const parentIssueLink = issue.fields.issuelinks
-        .filter((link) => bugRegExp.test(link.inwardIssue?.key ?? ''))
+    this.currentIssues.forEach((issue) => {
+      const internalRegExp = /MAR|PROD|EDI/g;
+      const childIssueLink = issue.fields.issuelinks
+        .filter((link) => internalRegExp.test(link.outwardIssue?.key ?? ''))
         .at(0);
 
-      if (!parentIssueLink) {
+      if (!childIssueLink) {
         return;
       }
 
-      const statusCell = this.getStatusTableCell(parentIssueLink.inwardIssue?.key ?? '');
+      const statusCell = this.getStatusTableCell(childIssueLink.inwardIssue?.key ?? '');
 
       const cellContainer = this.getCellContainer() as HTMLElement;
       if (!cellContainer) {
@@ -236,6 +238,27 @@ class JIRAServiceDeskHelper {
       statusCell?.after(cellContainer);
     });
   }
+  // private createInternalStatusCells(): void {
+  //   this.internalIssues.forEach((issue) => {
+  //     const bugRegExp = /TASUP|ENPSUP/g;
+  //     const parentIssueLink = issue.fields.issuelinks
+  //       .filter((link) => bugRegExp.test(link.inwardIssue?.key ?? ''))
+  //       .at(0);
+
+  //     if (!parentIssueLink) {
+  //       return;
+  //     }
+
+  //     const statusCell = this.getStatusTableCell(parentIssueLink.inwardIssue?.key ?? '');
+
+  //     const cellContainer = this.getCellContainer() as HTMLElement;
+  //     if (!cellContainer) {
+  //       return;
+  //     }
+  //     cellContainer.innerText = issue.fields.status.name;
+  //     statusCell?.after(cellContainer);
+  //   });
+  // }
 
   public async init(): Promise<void> {
     await this.waitForLoad();
