@@ -1,8 +1,11 @@
 // const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
+import css from 'dom-css';
 import { getElementsByText, notEmpty, waitForElement } from './helpers';
-import { Issue, Nullable, SiteType } from './types';
+import {
+  Issue, Nullable, SiteType,
+} from './types';
 
 class JIRAServiceDeskHelper {
   private currentIssues: Issue[] = [];
@@ -93,10 +96,6 @@ class JIRAServiceDeskHelper {
 
   /**
    * Save all linked internal issues details to internalIssues array
-   * @TODO Jest problem kiedy ktoś źle sklonuje wątek i wątek wewnętrzny
-   * znajduje się w inwardIssue, a nie w outwardIssue - trzeba znaleźć rozwiązanie
-   * można spróbować pobierać wszystkie linki (inward/outward) a potem jedynie filtrować
-   * czy są one ENP/TA-supem i mamy 100% pokrycie
    * @returns Promise<void>
    */
   private async getInternalIssuesData(): Promise<void> {
@@ -109,8 +108,7 @@ class JIRAServiceDeskHelper {
       // Exclude project links, take only area clones
       const projectRegExp = /KLER|TERG4|MSO|AMI/g;
 
-      const issueKeys: string[] = issue.fields.issuelinks
-        .map((link) => link.outwardIssue?.key)
+      const issueKeys: string[] = this.getChildKeys(issue)
         .filter((key) => typeof key === 'string' && !projectRegExp.test(key)) as string[];
 
       internalKeys.push(...issueKeys);
@@ -169,9 +167,24 @@ class JIRAServiceDeskHelper {
     // Find status header
     const statusHeader = this.getStatusTableHeader();
 
+    const siteType = this.getSiteType();
+    let header;
+    let span;
+    if (siteType === SiteType.QUEUE) {
+      header = document.createElement('div');
+      span = document.createElement('span');
+      css(header, {
+        width: '182px',
+        'margin-left': '0px',
+        flex: '0 0 auto',
+        display: 'flex',
+        position: 'relative',
+      });
+    } else {
+      header = document.createElement('th');
+      span = document.createElement('span');
+    }
     // Create table header
-    const header = document.createElement('th');
-    const span = document.createElement('span');
 
     span.innerText = 'Internal status';
 
@@ -204,6 +217,9 @@ class JIRAServiceDeskHelper {
     let container = null;
     if (siteType === SiteType.QUEUE) {
       container = document.createElement('div');
+      container.style.flex = '0 0 auto';
+      container.style.marginTop = '10px';
+      container.style.width = '182px';
     }
     if (siteType === SiteType.FILTER) {
       const span = document.createElement('span');
@@ -220,45 +236,41 @@ class JIRAServiceDeskHelper {
   private createInternalStatusCells(): void {
     this.currentIssues.forEach((issue) => {
       const internalRegExp = /MAR|PROD|EDI/g;
-      const childIssueLink = issue.fields.issuelinks
-        .filter((link) => internalRegExp.test(link.outwardIssue?.key ?? ''))
+      const keys = this.getChildKeys(issue);
+      const childIssue = keys
+        .filter((key) => internalRegExp.test(key))
         .at(0);
 
-      if (!childIssueLink) {
+      if (!childIssue) {
         return;
       }
 
-      const statusCell = this.getStatusTableCell(childIssueLink.inwardIssue?.key ?? '');
+      const statusCell = this.getStatusTableCell(issue.key ?? '');
 
       const cellContainer = this.getCellContainer() as HTMLElement;
       if (!cellContainer) {
         return;
       }
-      cellContainer.innerText = issue.fields.status.name;
+      const internal = this.getInternalIssueByKey(childIssue);
+
+      cellContainer.innerText = internal?.fields.status.name ?? '';
       statusCell?.after(cellContainer);
     });
   }
-  // private createInternalStatusCells(): void {
-  //   this.internalIssues.forEach((issue) => {
-  //     const bugRegExp = /TASUP|ENPSUP/g;
-  //     const parentIssueLink = issue.fields.issuelinks
-  //       .filter((link) => bugRegExp.test(link.inwardIssue?.key ?? ''))
-  //       .at(0);
 
-  //     if (!parentIssueLink) {
-  //       return;
-  //     }
+  /**
+   * Get all issue keys from child issues connected to parent issue
+   * @param parentIssue Issue
+   * @returns string[]
+   */
+  private getChildKeys(parentIssue: Issue): string[] {
+    return parentIssue.fields.issuelinks
+      .map((link) => link.inwardIssue?.key ?? link.outwardIssue?.key ?? '');
+  }
 
-  //     const statusCell = this.getStatusTableCell(parentIssueLink.inwardIssue?.key ?? '');
-
-  //     const cellContainer = this.getCellContainer() as HTMLElement;
-  //     if (!cellContainer) {
-  //       return;
-  //     }
-  //     cellContainer.innerText = issue.fields.status.name;
-  //     statusCell?.after(cellContainer);
-  //   });
-  // }
+  private getInternalIssueByKey(key: string): Issue|undefined {
+    return this.internalIssues.find((issue) => issue.key === key);
+  }
 
   public async init(): Promise<void> {
     await this.waitForLoad();
@@ -270,7 +282,7 @@ class JIRAServiceDeskHelper {
     const result = await this.searchJira('sad');
     console.log(result);
 
-    chrome.runtime.sendMessage({ notification: true });
+    // chrome.runtime.sendMessage({ notification: true });
   }
 }
 
