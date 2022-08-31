@@ -1,8 +1,18 @@
 const button = document.querySelector('button');
 
-(async () => {
+async function setDataStatus() {
   const credentials = await chrome.storage.sync.get(['auth']);
-  console.log(credentials);
+  const bool = JSON.stringify(credentials) !== '{}';
+  const container = document.querySelector('#status') as HTMLElement;
+  if (bool) {
+    container!.innerText = '✅';
+  } else {
+    container!.innerText = '❌';
+  }
+}
+
+(async () => {
+  await setDataStatus();
 })();
 
 button?.addEventListener('click', async () => {
@@ -15,4 +25,5 @@ button?.addEventListener('click', async () => {
 
   const encryptedString = btoa(`${email.value}:${token.value}`);
   await chrome.storage.sync.set({ auth: encryptedString });
+  await setDataStatus();
 });

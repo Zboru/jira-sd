@@ -272,15 +272,25 @@ class JIRAServiceDeskHelper {
     return this.internalIssues.find((issue) => issue.key === key);
   }
 
+  /**
+   * Function used to check if user provided credentials in extension popup
+   */
+  private async checkCredentials(): Promise<boolean> {
+    const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
+    return JSON.stringify(storageData) !== '{}';
+  }
+
   public async init(): Promise<void> {
+    // Stop extension when user doesn't provided authentication
+    if (!await this.checkCredentials()) {
+      return;
+    }
     await this.waitForLoad();
     await this.getIssuesData();
     await this.getInternalIssuesData();
     console.log(this.internalIssues);
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
-    const result = await this.searchJira('sad');
-    console.log(result);
 
     // chrome.runtime.sendMessage({ notification: true });
   }

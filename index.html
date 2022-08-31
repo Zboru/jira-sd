@@ -7,8 +7,12 @@
     <title>Vite + TS</title>
     <style>
       button {
-        float: right;
         margin: 5px 0;
+      }
+      .actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
     </style>
   </head>
@@ -18,7 +22,10 @@
       <input type="email" id="email">
       <label for="token">Token API:</label>
       <input type="text" id="token">
-      <button>Zapisz</button>
+      <div class="actions">
+        <span>Status danych: <span id="status"></span></span>
+        <button>Zapisz</button>
+      </div>
     </div>
     <script src="./dist/assets/js/popup.js"></script>
   </body>
