@@ -207,9 +207,8 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * 123
-   * @TODO Dokończyć budowanie kontenerów dla poszczególnych stron bo dla queue
-   * jest rozwalone + ogarnąć metodę stylowania poszczególnych klocków
+   * Create containers for internal issue status
+   * Different pages have different styles and types of containers
    * @returns HTMLElement | null
    */
   private getCellContainer(): Nullable<HTMLElement> {
@@ -241,19 +240,21 @@ class JIRAServiceDeskHelper {
         .filter((key) => internalRegExp.test(key))
         .at(0);
 
-      if (!childIssue) {
-        return;
-      }
-
       const statusCell = this.getStatusTableCell(issue.key ?? '');
 
       const cellContainer = this.getCellContainer() as HTMLElement;
+
       if (!cellContainer) {
         return;
       }
-      const internal = this.getInternalIssueByKey(childIssue);
 
-      cellContainer.innerText = internal?.fields.status.name ?? '';
+      if (!childIssue) {
+        cellContainer.innerHTML = '<i>Brak wątku</i>';
+      } else {
+        const internal = this.getInternalIssueByKey(childIssue);
+        cellContainer.innerText = internal?.fields.status.name ?? '';
+      }
+
       statusCell?.after(cellContainer);
     });
   }
