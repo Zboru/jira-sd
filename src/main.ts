@@ -2,7 +2,7 @@
 // const EMAIL = 'sebastian.zborowski@enp.pl';
 
 import css from 'dom-css';
-import { getElementsByText, notEmpty, waitForElement } from './helpers';
+import { getElementsByText, waitForElement } from './helpers';
 import {
   Issue, Nullable, SiteType,
 } from './types';
@@ -86,12 +86,12 @@ class JIRAServiceDeskHelper {
     const promises: Promise<any>[] = keys.map((key) => this.getIssueData(key));
     const result = await Promise.allSettled(promises);
 
-    this.currentIssues = result.map((promise) => {
-      if (promise.status === 'fulfilled') {
-        return promise.value as Issue;
-      }
-      return null;
-    }).filter(notEmpty);
+    this.currentIssues = result
+      .filter(((promise) => promise.status === 'fulfilled'))
+      .map((promise) => {
+        const promiseResult = promise as PromiseFulfilledResult<Issue>;
+        return promiseResult.value;
+      });
   }
 
   /**
@@ -125,7 +125,7 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * Returns 'Status' header basing on site type
+   * Returns 'Status' table header basing on site type
    * @returns Element | null
    */
   private getStatusTableHeader(): Nullable<Element> {
@@ -141,7 +141,7 @@ class JIRAServiceDeskHelper {
   }
 
   /**
-   * Returns status element of given issue basing on site type
+   * Returns status table cell of given issue basing on site type
    * @param issueKey
    * @returns Element | null
    */
@@ -292,6 +292,7 @@ class JIRAServiceDeskHelper {
     console.log(this.internalIssues);
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
+    this.searchJira('1');
 
     // chrome.runtime.sendMessage({ notification: true });
   }

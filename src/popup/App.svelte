@@ -28,7 +28,7 @@
 
 <style>
   b {
-    text-decoration: underline;
+    text-decoration: underline  ;
   }
   .logo {
     height: 6em;
