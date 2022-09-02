@@ -3,6 +3,7 @@
 
 import css from 'dom-css';
 import { getElementsByText, waitForElement } from './helpers';
+import Logger from './logger';
 import {
   Issue, Nullable, SiteType,
 } from './types';
@@ -51,17 +52,14 @@ class JIRAServiceDeskHelper {
 
   /**
    * Get current type of site for different DOM operations
-   * @returns SiteType | null
+   * @returns SiteType
    */
-  private getSiteType(): Nullable<SiteType> {
+  private getSiteType(): SiteType {
     const url = window.location.href;
-    if (/filter/.test(url)) {
-      return SiteType.FILTER;
-    }
     if (/queues/.test(url)) {
       return SiteType.QUEUE;
     }
-    return null;
+    return SiteType.FILTER;
   }
 
   /**
@@ -92,6 +90,7 @@ class JIRAServiceDeskHelper {
         const promiseResult = promise as PromiseFulfilledResult<Issue>;
         return promiseResult.value;
       });
+    Logger.info('Current issues are saved', this.currentIssues);
   }
 
   /**
@@ -122,6 +121,7 @@ class JIRAServiceDeskHelper {
         const promiseResult = promise as PromiseFulfilledResult<Issue>;
         return promiseResult.value;
       });
+    Logger.info('Internal issues are saved', this.internalIssues);
   }
 
   /**
@@ -166,6 +166,7 @@ class JIRAServiceDeskHelper {
   private createInternalStatusHeader(): void {
     // Find status header
     const statusHeader = this.getStatusTableHeader();
+    Logger.info('Found table header:', statusHeader);
 
     const siteType = this.getSiteType();
     let header;
@@ -190,6 +191,7 @@ class JIRAServiceDeskHelper {
 
     header.appendChild(span);
     statusHeader?.after(header);
+    Logger.info("Creating 'Internal status' header:", header);
   }
 
   /**
@@ -199,11 +201,12 @@ class JIRAServiceDeskHelper {
   private async waitForLoad(): Promise<void> {
     const siteType = this.getSiteType();
     if (siteType === SiteType.FILTER) {
-      await waitForElement('.issue-table-container');
+      await waitForElement('.headerrow-status');
     }
     if (siteType === SiteType.QUEUE) {
       await waitForElement('.virtual-table-row');
     }
+    Logger.info('Table content is loaded');
   }
 
   /**
@@ -286,10 +289,11 @@ class JIRAServiceDeskHelper {
     if (!await this.checkCredentials()) {
       return;
     }
+    Logger.info('Logged in!');
+
     await this.waitForLoad();
     await this.getIssuesData();
     await this.getInternalIssuesData();
-    console.log(this.internalIssues);
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
     this.searchJira('1');
