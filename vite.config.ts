@@ -8,8 +8,8 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'src/main.ts'),
-        background: path.resolve(__dirname, 'src/background.ts'),
+        main: path.resolve(__dirname, 'src/extension/main.ts'),
+        background: path.resolve(__dirname, 'src/extension/background.ts'),
         popup: path.resolve(__dirname, 'src/popup/main.ts'),
       },
       output: {
