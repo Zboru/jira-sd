@@ -1,0 +1,2 @@
+## JQL
+Po ustawieniu JQL w panelu Ustawienia, wtyczka będzie pobierała zgłoszenia zgodnie z podaną kwerendą. Jest to wymagane dla poprawnego działania modułu powiadomień o nowych zgłoszeniach oraz o zmianach statusów.
