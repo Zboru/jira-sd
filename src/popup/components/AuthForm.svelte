@@ -1,4 +1,7 @@
 <script lang="ts">
+import Button from "./General/Button.svelte";
+import Input from "./General/Input.svelte";
+
   //2rtWbyPo7CP7v1Fmrelr9C55
   let authState = "";
   let email: string = "";
@@ -50,7 +53,7 @@
       >(imie.nazwisko@enp.pl)</span
     ></label
   >
-  <input type="email" bind:value={email} id="email" />
+  <Input bind:value={email} id="email"/>
   <label for="token"
     >Token API:
     <a
@@ -60,18 +63,12 @@
       >Tutaj</a
     >
   </label>
-  <input type="text" bind:value={token} id="token" />
+  <Input bind:value={token} id="token"/>
   <div class="flex items-center justify-between mb-2">
     <p class="font-medium text-sm">
       Status danych: <span class="">{authState}</span>
     </p>
     <div class="flex-1" />
-    <button
-      on:click={checkCredentials}
-      class="bg-blue-700 hover:bg-blue-500 text-sm text-white focus:ring-4 focus:ring-blue-300 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-      type="button"
-    >
-      Zapisz dane
-    </button>
+    <Button on:click={checkCredentials}>Zapisz dane</Button>
   </div>
 </div>

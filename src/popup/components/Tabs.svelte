@@ -7,19 +7,22 @@
     TabPanels,
   } from "@rgossiaux/svelte-headlessui";
   import AuthForm from "./AuthForm.svelte";
+  import Settings from "./Settings.svelte";
 </script>
 
 <TabGroup>
   <TabList class="tablist">
     <Tab>Logowanie</Tab>
-	<Tab>Status</Tab>
     <Tab>Ustawienia</Tab>
+    <Tab>Status</Tab>
   </TabList>
   <TabPanels>
     <TabPanel class="px-4 py-2">
       <AuthForm />
     </TabPanel>
-    <TabPanel class="px-4 py-2">Content 2</TabPanel>
+    <TabPanel class="px-4 py-2">
+      <Settings />
+    </TabPanel>
   </TabPanels>
 </TabGroup>
 

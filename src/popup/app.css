@@ -10,10 +10,6 @@ body {
     @apply py-2 px-4
 }
 
-.authForm label {
+label {
     @apply text-gray-700 text-sm font-bold mb-1 inline-block
-}
-
-.authForm input {
-    @apply shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight mb-2
 }
