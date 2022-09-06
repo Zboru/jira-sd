@@ -237,7 +237,7 @@ class JIRAServiceDeskHelper {
    */
   private createInternalStatusCells(): void {
     this.currentIssues.forEach((issue) => {
-      const internalRegExp = /MAR|PROD|EDI/g;
+      const internalRegExp = /MAR|PROD|EDI|CRM/g;
       const keys = this.getChildKeys(issue);
       const childIssue = keys
         .filter((key) => internalRegExp.test(key))

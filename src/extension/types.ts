@@ -40,6 +40,14 @@ export interface Issue {
     self: string;
 }
 
+export interface JQLSearch {
+    expand: string;
+    issues: Issue[];
+    maxResults: number;
+    startAt: number;
+    total: number;
+}
+
 export enum SiteType {
     QUEUE, FILTER
 }
