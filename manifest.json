@@ -18,7 +18,8 @@
     "128": "dist/48.png"
   },
   "background": {
-    "service_worker": "dist/assets/js/background.js"
+    "service_worker": "dist/assets/js/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
