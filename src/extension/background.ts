@@ -1,17 +1,39 @@
-import { JQLSearch } from './types';
+import { uniqFromArrays } from './helpers';
+import { JQLSearch, StoredIssue } from './types';
 
 /**
  * Send notification
  * @returns void
  */
-function sendNotification(): void {
+let myNotificationID:string = '';
+function sendNewIssuesNotification(keys: string[]): void {
   chrome.notifications.create({
     iconUrl: '/public/48.png',
     type: 'basic',
-    title: 'Nowe zgłoszenie',
-    message: 'Zostało utworzone nowe zgłoszenie: TASUP-11111',
+    title: 'Nowe zgłoszenia',
+    message: `Zostały utworzone nowe zgłoszenia: ${keys.join(',')}`,
+    buttons: [{
+      title: 'Przejdź do zgłoszenia',
+    }],
+  }, (id) => {
+    myNotificationID = id;
   });
 }
+
+function checkNewIssues(changes: Record<string, any>) {
+  const issues = changes.currentIssues;
+  if (issues) {
+    const { oldValue, newValue } = issues;
+    if (newValue > oldValue) {
+      const oldKeys = oldValue.map((issue: StoredIssue) => issue.key);
+      const newKeys = newValue.map((issue: StoredIssue) => issue.key);
+      const uniqKeys = uniqFromArrays(newKeys, oldKeys);
+      sendNewIssuesNotification(uniqKeys);
+    }
+  }
+}
+
+// function check
 
 async function searchJQL(): Promise<JQLSearch> {
   const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
@@ -29,22 +51,28 @@ async function searchJQL(): Promise<JQLSearch> {
   return response.json();
 }
 
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.notification) {
-    sendNotification();
-  }
-});
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  checkNewIssues(changes);
   console.log('New item in storage', changes, areaName);
 });
 
 const UPDATE_INTERVAL = 5000;
-const searchInterval = setInterval(async () => {
+setInterval(async () => {
   const results = await searchJQL();
-  console.log(results);
+  const issues = results.issues.map((issue) => ({
+    key: issue.key,
+    status: issue.fields.status.name,
+    url: `https://enetproduction.atlassian.net/browse/${issue.key}`,
+  }));
+  await chrome.storage.sync.set({ currentIssues: issues });
 }, UPDATE_INTERVAL);
 
-setTimeout(() => {
-  clearInterval(searchInterval);
-}, 30000);
+sendNewIssuesNotification(['test']);
+
+chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
+  if (notifId === myNotificationID) {
+    if (btnIdx === 0) {
+      chrome.tabs.create({ url: 'https://google.com' }, (tab) => {});
+    }
+  }
+});

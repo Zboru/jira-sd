@@ -40,6 +40,11 @@ export interface Issue {
     self: string;
 }
 
+export interface StoredIssue {
+    key: string;
+    status: string;
+}
+
 export interface JQLSearch {
     expand: string;
     issues: Issue[];
