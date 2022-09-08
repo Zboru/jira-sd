@@ -5,21 +5,28 @@ import { JQLSearch, StoredIssue } from './types';
  * Send notification
  * @returns void
  */
-let myNotificationID:string = '';
-function sendNewIssuesNotification(keys: string[]): void {
+let currentNotificationId: string = '';
+let notificationIssueKey: string = '';
+function sendNewIssueNotification(key: string): void {
   chrome.notifications.create({
     iconUrl: '/public/48.png',
     type: 'basic',
     title: 'Nowe zgłoszenia',
-    message: `Zostały utworzone nowe zgłoszenia: ${keys.join(',')}`,
+    message: `Zostały utworzone nowe zgłoszenia: ${key}`,
     buttons: [{
       title: 'Przejdź do zgłoszenia',
     }],
   }, (id) => {
-    myNotificationID = id;
+    currentNotificationId = id;
+    notificationIssueKey = key;
   });
 }
 
+/**
+ * Check changes in chrome storage to find if there's new issues
+ * so we can push notification to user
+ * @param changes Record<string, any>
+ */
 function checkNewIssues(changes: Record<string, any>) {
   const issues = changes.currentIssues;
   if (issues) {
@@ -28,13 +35,15 @@ function checkNewIssues(changes: Record<string, any>) {
       const oldKeys = oldValue.map((issue: StoredIssue) => issue.key);
       const newKeys = newValue.map((issue: StoredIssue) => issue.key);
       const uniqKeys = uniqFromArrays(newKeys, oldKeys);
-      sendNewIssuesNotification(uniqKeys);
+      uniqKeys.forEach(sendNewIssueNotification);
     }
   }
 }
 
-// function check
-
+/**
+ * Send search query provided by user to Jira to find issues
+ * @returns Promise<JQLSearch>
+ */
 async function searchJQL(): Promise<JQLSearch> {
   const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
   if (!storageData) {
@@ -51,12 +60,15 @@ async function searchJQL(): Promise<JQLSearch> {
   return response.json();
 }
 
-chrome.storage.onChanged.addListener(async (changes, areaName) => {
+chrome.storage.onChanged.addListener(async (changes) => {
   checkNewIssues(changes);
-  console.log('New item in storage', changes, areaName);
+  console.log('New item in storage', changes);
 });
 
-const UPDATE_INTERVAL = 5000;
+/**
+ * Search issue interval
+ */
+const UPDATE_INTERVAL = 60 * 1000;
 setInterval(async () => {
   const results = await searchJQL();
   const issues = results.issues.map((issue) => ({
@@ -67,12 +79,17 @@ setInterval(async () => {
   await chrome.storage.sync.set({ currentIssues: issues });
 }, UPDATE_INTERVAL);
 
-sendNewIssuesNotification(['test']);
-
-chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
-  if (notifId === myNotificationID) {
-    if (btnIdx === 0) {
-      chrome.tabs.create({ url: 'https://google.com' }, (tab) => {});
+chrome.notifications.onButtonClicked.addListener(async (notifId, btnIdx) => {
+  const result: Record<string, StoredIssue[]> = await chrome.storage.sync.get(['currentIssues']);
+  const storedIssues: StoredIssue[] = result.currentIssues;
+  if (storedIssues) {
+    const issue = storedIssues.find((i) => i.key === notificationIssueKey);
+    if (notifId === currentNotificationId) {
+      if (btnIdx === 0) {
+        chrome.tabs.create({ url: issue?.url ?? '#' });
+      }
     }
   }
 });
+
+sendNewIssueNotification('TASUP-13078');
