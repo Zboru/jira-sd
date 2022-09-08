@@ -3,6 +3,11 @@ import path from 'path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [svelte()],
   build: {
     sourcemap: true,

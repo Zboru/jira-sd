@@ -19,6 +19,9 @@
     "baseUrl": ".",
     "allowJs": true,
     "checkJs": true,
+    "paths": {
+      "@/*": ["./src"]
+    }
   },
   "include": ["src"],
 }
