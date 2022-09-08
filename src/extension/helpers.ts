@@ -25,10 +25,6 @@ export function waitForElement(selector: string) {
   });
 }
 
-export function notEmpty<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
-}
-
 export function uniqFromArrays(arr1: any[], arr2: any[]): any[] {
   const unique1 = arr1.filter((o) => arr2.indexOf(o) === -1);
   const unique2 = arr2.filter((o) => arr1.indexOf(o) === -1);

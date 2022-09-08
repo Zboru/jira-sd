@@ -43,6 +43,7 @@ export interface Issue {
 export interface StoredIssue {
     key: string;
     status: string;
+    url: string;
 }
 
 export interface JQLSearch {
