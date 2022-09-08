@@ -27,10 +27,16 @@
         "*://*.enetproduction.atlassian.net/issues/*",
         "*://*.enetproduction.atlassian.net/jira/servicedesk/*"
       ],
-      "js": [
-        "dist/assets/js/main.js"
-      ],
+      "js": ["dist/assets/js/content_script.js"],
       "run_at": "document_end"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [ "dist/assets/js/*" ],
+      "matches": [ "https://enetproduction.atlassian.net/*" ],
+      "use_dynamic_url": true
+    }
+    
   ]
 }

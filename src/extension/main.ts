@@ -6,7 +6,7 @@ import { getElementsByText, waitForElement } from './helpers';
 import Logger from './logger';
 import {
   Issue, Nullable, SiteType,
-} from './types';
+} from './types/types';
 
 class JIRAServiceDeskHelper {
   private currentIssues: Issue[] = [];

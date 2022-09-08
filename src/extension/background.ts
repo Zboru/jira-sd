@@ -1,5 +1,5 @@
 import { uniqFromArrays } from './helpers';
-import { JQLSearch, StoredIssue } from './types';
+import { JQLSearch, StoredIssue } from './types/types';
 
 /**
  * Send notification

@@ -69,6 +69,6 @@ import Input from "./General/Input.svelte";
       Status danych: <span class="">{authState}</span>
     </p>
     <div class="flex-1" />
-    <Button on:click={checkCredentials}>Zapisz dane</Button>
+    <Button click={checkCredentials}>Zapisz dane</Button>
   </div>
 </div>
