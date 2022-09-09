@@ -2,8 +2,7 @@
 import Button from "./General/Button.svelte";
 import Input from "./General/Input.svelte";
 
-  //2rtWbyPo7CP7v1Fmrelr9C55
-  let authState = "";
+  let authState: string = "";
   let email: string = "";
   let token: string = "";
 
@@ -12,8 +11,9 @@ import Input from "./General/Input.svelte";
    * @returns Promise<void>
    */
   async function setDataStatus(): Promise<void> {
-    const credentials = await chrome.storage.sync.get(["auth"]);
-    const bool = JSON.stringify(credentials) !== "{}";
+    const result = await chrome.storage.sync.get(["auth"]);
+    const authData = result.auth;
+    const bool = JSON.stringify(authData ?? {}) !== "{}";
     authState = bool ? "✅" : "❌";
   }
 
@@ -41,6 +41,7 @@ import Input from "./General/Input.svelte";
       }
     } catch (error) {
       authState = "❌";
+      await chrome.storage.sync.set({ auth: {} });
     }
   }
 
