@@ -169,7 +169,7 @@ class JIRAServiceDeskHelper {
       span = document.createElement('span');
     }
     // Create table header
-
+    span.id = 'internal-status';
     span.innerText = 'Internal status';
 
     header.appendChild(span);
@@ -268,18 +268,45 @@ class JIRAServiceDeskHelper {
     return JSON.stringify(authData ?? {}) !== '{}';
   }
 
+  /**
+   * Mount observer that initializes header when user changes filter or something with table
+   */
+  private mountObserver(): void {
+    const siteType = this.getSiteType();
+    let container;
+    if (siteType === SiteType.FILTER) {
+      container = document.querySelector('.navigator-content')!;
+    } else {
+      container = document.querySelector('div[data-test-id="servicedesk-queues-agent-view.layout.layout"')!;
+    }
+    const observer = new MutationObserver(async (mutations) => {
+      Logger.info('Table changed!', mutations);
+      if (document.querySelector('#internal-status')) {
+        return;
+      }
+      // If DOM changed and there's no internal status header, create new one
+      await this.waitForLoad();
+      await this.getIssuesData();
+      await this.getInternalIssuesData();
+      this.createInternalStatusHeader();
+      this.createInternalStatusCells();
+    });
+
+    observer.observe(container, { subtree: true, childList: true });
+  }
+
   public async init(): Promise<void> {
     // Stop extension when user doesn't provided authentication
     if (!await this.checkCredentials()) {
       return;
     }
     Logger.info('Logged in!');
-
     await this.waitForLoad();
     await this.getIssuesData();
     await this.getInternalIssuesData();
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
+    this.mountObserver();
 
     // chrome.runtime.sendMessage({ notification: true });
   }
