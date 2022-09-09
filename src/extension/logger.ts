@@ -9,6 +9,11 @@ class Logger {
     this.log(string, css, ...rest);
   }
 
+  public static warn(string: any, ...rest: any[]): void {
+    const css = 'color: #ebba34';
+    this.log(string, css, ...rest);
+  }
+
   public static error(string: any, ...rest: any[]): void {
     const css = 'color: #b82206';
     this.log(string, css, ...rest);

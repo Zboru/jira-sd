@@ -59,3 +59,8 @@ export enum SiteType {
 }
 
 export type Nullable<T> = T | null;
+
+export interface selectItem {
+    name: string;
+    value: string;
+}

@@ -263,8 +263,9 @@ class JIRAServiceDeskHelper {
    * Function used to check if user provided credentials in extension popup
    */
   private async checkCredentials(): Promise<boolean> {
-    const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
-    return JSON.stringify(storageData) !== '{}';
+    const result: Record<string, string> = await chrome.storage.sync.get(['auth']);
+    const authData = result.auth;
+    return JSON.stringify(authData ?? {}) !== '{}';
   }
 
   public async init(): Promise<void> {

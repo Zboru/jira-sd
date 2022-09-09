@@ -18,11 +18,12 @@ export default defineConfig({
         main: path.resolve(__dirname, 'src/extension/main.ts'),
         background: path.resolve(__dirname, 'src/extension/background.ts'),
         popup: path.resolve(__dirname, 'src/popup/main.ts'),
+        logger: path.resolve(__dirname, 'src/extension/logger.ts'),
       },
       output: {
         sourcemap: 'inline',
         entryFileNames: 'assets/js/[name].js',
-        assetFileNames: '[name].[ext]',
+        assetFileNames: 'assets/css/[name].[ext]',
       },
     },
   },
