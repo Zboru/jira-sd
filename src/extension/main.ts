@@ -1,6 +1,3 @@
-// const API_TOKEN = '2rtWbyPo7CP7v1Fmrelr9C55';
-// const EMAIL = 'sebastian.zborowski@enp.pl';
-
 import css from 'dom-css';
 import { getElementsByText, waitForElement } from './helpers';
 import Logger from './logger';
