@@ -261,11 +261,11 @@ class JIRAServiceDeskHelper {
         return;
       }
 
-      if (!childIssue) {
-        cellContainer.innerHTML = '<i>Brak wątku</i>';
-      } else {
+      if (childIssue) {
         const internal = this.getInternalIssueByKey(childIssue);
         cellContainer.innerText = internal?.fields.status.name ?? '';
+      } else {
+        cellContainer.innerHTML = '<i>Brak wątku</i>';
       }
 
       statusCell?.after(cellContainer);
