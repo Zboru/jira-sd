@@ -25,6 +25,11 @@ export function waitForElement(selector: string) {
   });
 }
 
-export function notEmpty<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
+export function notEmpty<T>(argument: T | null | undefined): argument is T {
+  return argument !== null && argument !== undefined;
+}
+
+// eslint-disable-next-line max-len
+export function isFulfilled<T>(argument: PromiseSettledResult<T>): argument is PromiseFulfilledResult<T> {
+  return argument.status === 'fulfilled';
 }

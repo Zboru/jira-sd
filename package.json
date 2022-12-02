@@ -12,11 +12,11 @@
   "dependencies": {
     "@types/chrome": "^0.0.193",
     "dom-css": "^2.1.0",
-    "vite": "^3.0.6"
+    "vite": "^3.0.6",
+    "@sveltejs/vite-plugin-svelte": "^1.0.1"
   },
   "devDependencies": {
     "@rgossiaux/svelte-headlessui": "^1.0.2",
-    "@sveltejs/vite-plugin-svelte": "^1.0.1",
     "@tsconfig/svelte": "^3.0.0",
     "@types/node": "^18.7.6",
     "@typescript-eslint/eslint-plugin": "^5.33.0",

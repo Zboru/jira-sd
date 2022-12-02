@@ -2,49 +2,50 @@
 import Button from "./General/Button.svelte";
 import Input from "./General/Input.svelte";
 
-  //2rtWbyPo7CP7v1Fmrelr9C55
-  let authState = "";
-  let email: string = "";
-  let token: string = "";
+//2rtWbyPo7CP7v1Fmrelr9C55
+let authState = "";
+let email: string = "";
+let token: string = "";
 
-  /**
-   * Set authState variable basing on saved credentials in localStorage
-   * @returns Promise<void>
-   */
-  async function setDataStatus(): Promise<void> {
-    const credentials = await chrome.storage.sync.get(["auth"]);
-    const bool = JSON.stringify(credentials) !== "{}";
-    authState = bool ? "✅" : "❌";
-  }
+/**
+ * Set authState variable basing on saved credentials in localStorage
+ * @returns Promise<void>
+ */
+async function setDataStatus(): Promise<void> {
+  const credentials = await chrome.storage.sync.get(["auth"]);
+  const bool = JSON.stringify(credentials) !== "{}";
+  authState = bool ? "✅" : "❌";
+}
 
-  /**
-   * Check if provided user data is valid by sending request to JIRA
-   * @returns Promise<void>
-   */
-  async function checkCredentials(): Promise<void> {
-    const auth = btoa(`${email}:${token}`);
-    try {
-      const request = await fetch(
-        `https://enetproduction.atlassian.net/rest/auth/1/session`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Basic ${auth}`,
-            Accept: "application/json",
-          },
-        }
-      );
-      const response = await request.json();
-      if (response) {
-        await chrome.storage.sync.set({ auth });
-        authState = "✅";
+/**
+ * Check if provided user data is valid by sending request to JIRA
+ * @returns Promise<void>
+ */
+async function checkCredentials(): Promise<void> {
+  const auth = btoa(`${email}:${token}`);
+  
+  try {
+    const request = await fetch(
+      `https://enetproduction.atlassian.net/rest/auth/1/session`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          Accept: "application/json",
+        },
       }
-    } catch (error) {
-      authState = "❌";
+    );
+    const response = await request.json();
+    if (response) {
+      await chrome.storage.sync.set({ auth });
+      authState = "✅";
     }
+  } catch (error) {
+    authState = "❌";
   }
+}
 
-  setDataStatus();
+setDataStatus();
 </script>
 
 <div class="authForm">
