@@ -34,23 +34,6 @@ class JIRAServiceDeskHelper {
     return response.json();
   }
 
-  private async searchJira(query: string) {
-    console.log(query);
-    const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
-    if (!storageData) {
-      return {};
-    }
-    const q = 'project in ("ENP Support", "TERG-ADAFIR SUPPORT") AND status not in (Resolved, Closed, "Waiting for release") AND Obszar is not EMPTY AND "Obszar[Select List (multiple choices)]" = MARKETING';
-    const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/search?jql=${q}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Basic ${storageData.auth}`,
-        Accept: 'application/json',
-      },
-    });
-    return response.json();
-  }
-
   /**
    * Get current type of site for different DOM operations
    * @returns {SiteType}
@@ -262,7 +245,8 @@ class JIRAServiceDeskHelper {
       }
 
       if (childIssue) {
-        const internal = this.getInternalIssueByKey(childIssue);
+        const internal = this.internalIssues
+          .find((internalIssue) => internalIssue.key === childIssue);
         cellContainer.innerText = internal?.fields.status.name ?? '';
       } else {
         cellContainer.innerHTML = '<i>Brak wątku</i>';
@@ -280,10 +264,6 @@ class JIRAServiceDeskHelper {
   private getChildKeys(parentIssue: Issue): (string | null)[] {
     return parentIssue.fields.issuelinks
       .map((link) => link.inwardIssue?.key ?? link.outwardIssue?.key ?? null);
-  }
-
-  private getInternalIssueByKey(key: string): Issue|undefined {
-    return this.internalIssues.find((issue) => issue.key === key);
   }
 
   /**
@@ -306,7 +286,6 @@ class JIRAServiceDeskHelper {
     await this.getInternalIssuesData();
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
-    this.searchJira('1');
   }
 }
 

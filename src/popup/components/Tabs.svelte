@@ -14,7 +14,6 @@
   <TabList class="tablist">
     <Tab>Logowanie</Tab>
     <Tab>Ustawienia</Tab>
-    <Tab>Status</Tab>
   </TabList>
   <TabPanels>
     <TabPanel class="px-4 py-2">

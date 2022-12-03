@@ -1,23 +1,41 @@
 <script lang="ts">
-    import Button from "./General/Button.svelte";
-    import Input from "./General/Input.svelte";
+  import Button from "./General/Button.svelte";
+  import Input from "./General/Input.svelte";
+  import Switch from "./General/Switch.svelte";
 
-    let JQL: string = "";
-    async function saveSettings(): Promise<void> {
-        await chrome.storage.sync.set({ JQL });
-    }
+  let sendNotifications: boolean = false;
+  let JQL: string = "";
 
-    /**
-     * Load saved JQL to variable
-    */
-    (async () => {
-        const result = await chrome.storage.sync.get(['JQL']);
-        JQL = result.JQL;
-    })();
+  async function saveSettings(): Promise<void> {
+    await chrome.storage.sync.set({ JQL, sendNotifications });
+  }
+
+  (async () => {
+    const result = await chrome.storage.sync.get(["JQL", "sendNotifications"]);
+    JQL = result.JQL;
+    sendNotifications = result.sendNotifications;
+  })();
 </script>
 
 <div>
-    <label for="JQL">JQL:</label>
-    <Input bind:value={JQL} id="JQL" />
-    <Button click={saveSettings}>Zapisz</Button>
+  <Switch
+    bind:value={sendNotifications}
+    label="Powiadomienia o nowych zgłoszeniach"
+  />
+  <label for="JQL">JQL:</label>
+  <Input bind:value={JQL} disabled={!sendNotifications} id="JQL" />
+
+  <div class="actions">
+    <div class="spacer" />
+    <Button on:click={saveSettings}>Zapisz</Button>
+  </div>
 </div>
+
+<style>
+  .actions {
+    display: flex;
+  }
+  .spacer {
+    flex-grow: 1;
+  }
+</style>
