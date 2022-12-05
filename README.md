@@ -4,7 +4,7 @@ Wtyczka pomagająca w codziennej pracy na Service Desk poprzez dodanie niestanda
 
 ## Aktualna lista funkcji:
 * Wyświetlanie statusów wątków wewnętrznych na liście zgłoszeń
-* Powiadomienia push związane z nowo-dodanymi zgłoszeniami przez klienta
+* Powiadomienia push związane z nowo dodanymi zgłoszeniami przez klienta
 
 ## Instalacja
 
