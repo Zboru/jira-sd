@@ -25,8 +25,11 @@ export function waitForElement(selector: string) {
   });
 }
 
-export function uniqFromArrays(arr1: any[], arr2: any[]): any[] {
-  const unique1 = arr1.filter((o) => arr2.indexOf(o) === -1);
-  const unique2 = arr2.filter((o) => arr1.indexOf(o) === -1);
-  return unique1.concat(unique2);
+export function notEmpty<T>(argument: T | null | undefined): argument is T {
+  return argument !== null && argument !== undefined;
+}
+
+// eslint-disable-next-line max-len
+export function isFulfilled<T>(argument: PromiseSettledResult<T>): argument is PromiseFulfilledResult<T> {
+  return argument.status === 'fulfilled';
 }

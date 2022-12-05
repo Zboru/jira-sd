@@ -1,5 +1,7 @@
 import css from 'dom-css';
-import { getElementsByText, waitForElement } from './helpers';
+import {
+  getElementsByText, isFulfilled, notEmpty, waitForElement,
+} from './helpers';
 import Logger from './logger';
 import {
   Issue, Nullable, SiteType,
@@ -15,11 +17,12 @@ class JIRAServiceDeskHelper {
    * @param issueKey string
    * @returns Promise<Record<string, string>>
    */
-  private async getIssueData(issueKey: Nullable<string>): Promise<Record<string, string>> {
+  private async getIssueData(issueKey: Nullable<string>): Promise<Issue | null> {
     const storageData: Record<string, string> = await chrome.storage.sync.get(['auth']);
-    if (!storageData) {
-      return {};
+    if (!storageData || issueKey === null) {
+      return null;
     }
+
     const response = await fetch(`https://enetproduction.atlassian.net/rest/api/3/issue/${issueKey}`, {
       method: 'GET',
       headers: {
@@ -27,12 +30,13 @@ class JIRAServiceDeskHelper {
         Accept: 'application/json',
       },
     });
+
     return response.json();
   }
 
   /**
    * Get current type of site for different DOM operations
-   * @returns SiteType
+   * @returns {SiteType}
    */
   private getSiteType(): SiteType {
     const url = window.location.href;
@@ -46,67 +50,74 @@ class JIRAServiceDeskHelper {
    * Get keys of issues from table, ex. (TASUP-12345)
    */
   private getIssueKeys(): string[] {
-    const keyCells = Array.from(document.querySelectorAll('.issuekey a')) as HTMLElement[];
-    if (keyCells.length) {
-      return keyCells
-        .map((cell) => cell.dataset.issueKey ?? null)
-        .filter((key) => key) as string[];
+    const keyTableCells = Array.from(document.querySelectorAll('.issuekey a')) as HTMLElement[];
+
+    if (!keyTableCells.length) {
+      return [];
     }
-    return [];
+
+    return keyTableCells
+      .map((cell) => cell.dataset.issueKey)
+      .filter(notEmpty);
   }
 
   /**
-   * Save all issues details to currentIssues array
-   * @returns Promise<void>
+   * Get and save details of issues to currentIssues array
+   * @returns {Promise<void>}
    */
   private async getIssuesData(): Promise<void> {
     const keys = this.getIssueKeys();
-    const promises: Promise<any>[] = keys.map((key) => this.getIssueData(key));
+    Logger.info('Found keys:', keys);
+
+    const promises: Promise<Issue | null>[] = keys.map((key) => this.getIssueData(key));
+
     const result = await Promise.allSettled(promises);
 
     this.currentIssues = result
-      .filter(((promise) => promise.status === 'fulfilled'))
-      .map((promise) => {
-        const promiseResult = promise as PromiseFulfilledResult<Issue>;
-        return promiseResult.value;
-      });
+      .filter(isFulfilled)
+      .map((promise) => promise.value)
+      .filter(notEmpty);
+
     Logger.info('Current issues are saved', this.currentIssues);
   }
 
   /**
-   * Save all linked internal issues details to internalIssues array
-   * @returns Promise<void>
+   * Get and save all details of linked internal issues to internalIssues array
+   * @returns {Promise<void>}
    */
   private async getInternalIssuesData(): Promise<void> {
     const internalKeys: string[] = [];
+
     this.currentIssues.forEach((issue: Issue) => {
       if (!issue.fields.issuelinks.length) {
         return;
       }
 
       // Exclude project links, take only area clones
-      const projectRegExp = /KLER|TERG4|MSO|AMI/g;
+      const projectRegExp = /KLER|TERG4|MSO|AMI|ENPSUP|TASUP/g;
 
       const issueKeys: string[] = this.getChildKeys(issue)
-        .filter((key) => typeof key === 'string' && !projectRegExp.test(key)) as string[];
+        .filter(notEmpty)
+        .filter((key) => !projectRegExp.test(key));
 
       internalKeys.push(...issueKeys);
     });
 
     const promises: Promise<any>[] = internalKeys.map((key) => this.getIssueData(key));
+
     const result = await Promise.allSettled(promises);
+
     this.internalIssues = result
-      .filter(((promise) => promise.status === 'fulfilled'))
-      .map((promise) => {
-        const promiseResult = promise as PromiseFulfilledResult<Issue>;
-        return promiseResult.value;
-      });
+      .filter(isFulfilled)
+      .map((promise) => promise.value)
+      .filter(notEmpty);
+
     Logger.info('Internal issues are saved', this.internalIssues);
   }
 
   /**
-   * Returns 'Status' table header basing on site type
-   * @returns Element | null
+   * Returns 'Status' table header element basing on site type
+   * @returns {Element | null}
    */
   private getStatusTableHeader(): Nullable<Element> {
     const siteType = this.getSiteType();
@@ -114,43 +125,24 @@ class JIRAServiceDeskHelper {
       return document.querySelector('.headerrow-status');
     }
     if (siteType === SiteType.QUEUE) {
-      const elements = getElementsByText('Status', 'div');
-      return elements[0];
-    }
-    return null;
-  }
-
-  /**
-   * Returns status table cell of given issue basing on site type
-   * @param issueKey
-   * @returns Element | null
-   */
-  private getStatusTableCell(issueKey: string): Nullable<Element> {
-    const siteType = this.getSiteType();
-    if (siteType === SiteType.FILTER) {
-      return document.querySelector(`#issuetable tr.issuerow[data-issuekey="${issueKey}"] .status`);
-    }
-    if (siteType === SiteType.QUEUE) {
-      const regexp = new RegExp(`${issueKey}-status`);
-      const cells = Array.from(document.querySelectorAll('.virtual-table-row div[data-test-id]')) as HTMLElement[];
-      const statusCell = cells.filter((cell) => regexp.test(cell.dataset.testId ?? '')).at(0);
-      return statusCell ?? null;
+      return getElementsByText('Status', 'div')[0];
     }
     return null;
   }
 
   /**
    * Create header for internal status cell
-   * @returns void
+   * @returns {void}
    */
   private createInternalStatusHeader(): void {
     // Find status header
     const statusHeader = this.getStatusTableHeader();
     Logger.info('Found table header:', statusHeader);
 
-    const siteType = this.getSiteType();
     let header;
     let span;
+
+    const siteType = this.getSiteType();
     if (siteType === SiteType.QUEUE) {
       header = document.createElement('div');
       span = document.createElement('span');
@@ -171,12 +163,13 @@ class JIRAServiceDeskHelper {
 
     header.appendChild(span);
     statusHeader?.after(header);
+
     Logger.info("Creating 'Internal status' header:", header);
   }
 
   /**
-   * Wait for tables to load so script can scrap issue keys
-   * @returns Promise<void>
+   * Wait for tables to load so script can retrieve issue keys
+   * @returns {Promise<void>}
    */
   private async waitForLoad(): Promise<void> {
     const siteType = this.getSiteType();
@@ -212,6 +205,25 @@ class JIRAServiceDeskHelper {
   }
 
   /**
+   * Returns 'Status' table cell of given issue basing on site type
+   * @param {string} issueKey
+   * @returns {Element | null}
+   */
+  private getStatusTableCell(issueKey: string): Nullable<Element> {
+    const siteType = this.getSiteType();
+    if (siteType === SiteType.FILTER) {
+      return document.querySelector(`#issuetable tr.issuerow[data-issuekey="${issueKey}"] .status`);
+    }
+    if (siteType === SiteType.QUEUE) {
+      const regexp = new RegExp(`${issueKey}-status`);
+      const cells = Array.from(document.querySelectorAll('.virtual-table-row div[data-test-id]')) as HTMLElement[];
+      const statusCell = cells.filter((cell) => regexp.test(cell.dataset.testId ?? '')).at(0);
+      return statusCell ?? null;
+    }
+    return null;
+  }
+
+  /**
    * Create internal status cell in each current issue
    * @returns void
    */
@@ -220,6 +232,7 @@ class JIRAServiceDeskHelper {
       const internalRegExp = /MAR|PROD|EDI|CRM/g;
       const keys = this.getChildKeys(issue);
       const childIssue = keys
+        .filter(notEmpty)
         .filter((key) => internalRegExp.test(key))
         .at(0);
 
@@ -231,11 +244,12 @@ class JIRAServiceDeskHelper {
         return;
       }
 
-      if (!childIssue) {
-        cellContainer.innerHTML = '<i>Brak wątku</i>';
-      } else {
-        const internal = this.getInternalIssueByKey(childIssue);
+      if (childIssue) {
+        const internal = this.internalIssues
+          .find((internalIssue) => internalIssue.key === childIssue);
         cellContainer.innerText = internal?.fields.status.name ?? '';
+      } else {
+        cellContainer.innerHTML = '<i>Brak wątku</i>';
       }
 
       statusCell?.after(cellContainer);
@@ -245,15 +259,11 @@ class JIRAServiceDeskHelper {
   /**
    * Get all issue keys from child issues connected to parent issue
    * @param parentIssue Issue
-   * @returns string[]
+   * @returns {(string | null)[]}
    */
-  private getChildKeys(parentIssue: Issue): string[] {
+  private getChildKeys(parentIssue: Issue): (string | null)[] {
     return parentIssue.fields.issuelinks
-      .map((link) => link.inwardIssue?.key ?? link.outwardIssue?.key ?? '');
-  }
-
-  private getInternalIssueByKey(key: string): Issue|undefined {
-    return this.internalIssues.find((issue) => issue.key === key);
+      .map((link) => link.inwardIssue?.key ?? link.outwardIssue?.key ?? null);
   }
 
   /**
@@ -304,12 +314,9 @@ class JIRAServiceDeskHelper {
     this.createInternalStatusHeader();
     this.createInternalStatusCells();
     this.mountObserver();
-
-    // chrome.runtime.sendMessage({ notification: true });
   }
 }
 
-(async () => {
-  const JSDH = new JIRAServiceDeskHelper();
-  JSDH.init();
+(() => {
+  new JIRAServiceDeskHelper().init();
 })();
