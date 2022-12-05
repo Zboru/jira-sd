@@ -1,5 +1,4 @@
-import { uniqFromArrays } from './helpers';
-import { JQLSearch, StoredIssue } from './types/types';
+import { JQLSearch } from './types/types';
 
 /**
  * Send notification
@@ -48,7 +47,7 @@ async function findNewIssue(issueKeys: string[]): Promise<string[] | null> {
   return newlyAddedIssues;
 }
 
-const UPDATE_INTERVAL = 5000;
+const UPDATE_INTERVAL = 60000;
 (async () => {
   const { sendNotifications } = await chrome.storage.sync.get(['sendNotifications']);
   if (await checkCredentials() && sendNotifications) {
